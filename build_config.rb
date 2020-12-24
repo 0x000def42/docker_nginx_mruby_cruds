@@ -20,7 +20,7 @@ MRuby::Build.new('host') do |conf|
   # conf.gem :github => 'iij/mruby-dir'
   # conf.gem :github => 'iij/mruby-digest'
   # conf.gem :github => 'iij/mruby-process'
-  # conf.gem :github => 'mattn/mruby-json'
+  conf.gem :github => 'mattn/mruby-json'
   # conf.gem :github => 'mattn/mruby-onig-regexp'
   conf.gem :github => 'matsumotory/mruby-redis'
   # conf.gem :github => 'matsumotory/mruby-vedis'

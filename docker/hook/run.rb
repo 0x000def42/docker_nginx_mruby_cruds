@@ -1,7 +1,7 @@
 class App
   include Xdef42::App
   get "/" do
-    render 200, "It's ok"
+    render 200, {a: "b"}
   end
 end
 

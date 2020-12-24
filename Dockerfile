@@ -22,7 +22,6 @@ RUN cd /usr/local/src/ && git clone https://github.com/matsumotory/ngx_mruby.git
 ENV NGINX_CONFIG_OPT_ENV --with-http_stub_status_module --with-http_ssl_module --prefix=/usr/local/nginx --with-http_realip_module --with-http_addition_module --with-http_sub_module --with-http_gunzip_module --with-http_gzip_static_module --with-http_random_index_module --with-http_secure_link_module
 # COPY . /usr/local/src/ngx_mruby
 COPY ./build_config.rb /usr/local/src/ngx_mruby/build_config.rb
-RUN ls -l /usr/local/src/ngx_mruby
 RUN cd /usr/local/src/ngx_mruby && sh build.sh
 RUN cd /usr/local/src/ngx_mruby && make install
 

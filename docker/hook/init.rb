@@ -53,7 +53,7 @@ module Xdef42
     end
 
     def render code, content
-      [code, headers, [content]]
+      [code, headers, [JSON::stringify(content)]]
     end
 
     def not_found
