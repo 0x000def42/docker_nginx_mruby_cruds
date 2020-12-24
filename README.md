@@ -1,15 +1,12 @@
-# Ngx ruby dockerized
+# Dockerized nginx mruby + redis cruds
 
-Minimal files to startup
+Challenge!!
 
-Based on https://github.com/matsumotory/ngx_mruby
+Get 10rps on crud operations on 1 "Model".
 
-## Get it
-1. `git clone git@github.com:0x000def42/docker_nginx_mruby.git`
-2. `cd docker_nginx_mruby`
-3. `docker build . -t docker_nginx_mruby`
-4. `docker run -p 1000:80 docker_nginx_mruby`
-5. ...
-6. PROFIT
+Buissnes login on mruby in core of nginx.
+Redis as database :)
 
-Open http://localhost:1000/mruby-hello
+Clear nginx "Hello world" page with default settings and without docker returns 125k rps.
+Optimized nginx with mruby in docker with `return 200 "Hello"` has 90k rps.
+Optimized nginx with mruby in docker with mruby file directives that call init class instance and print "Hello" string has 85k rps.
