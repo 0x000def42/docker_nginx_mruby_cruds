@@ -1,0 +1,11 @@
+version: '3.7'
+services:
+  mruby:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 1000:80
+    volumes:
+      - ./docker/hook:/usr/local/nginx/hook
+      - ./docker/conf/nginx.conf:/usr/local/nginx/conf/nginx.conf
