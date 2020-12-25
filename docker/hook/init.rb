@@ -1,4 +1,26 @@
 module Xdef42
+  class Request
+
+    attr_reader :env, :params, :rendered
+    def initialize env
+      @env = env
+      @rendered = false
+    end
+
+    def rendered?
+      @rendered
+    end
+
+    def headers
+      {'Content-Type' => 'application/json; charset=utf-8'}
+    end
+
+    def render code, content
+      @rendered = true
+      [code, headers, JSON.stringify(content)]
+    end
+  end
+
   module App
     METHODS = {
       GET: ::R3::GET,
@@ -44,11 +66,22 @@ module Xdef42
     end
 
     def call env
-      @env = env
-      method = METHODS[@env['REQUEST_METHOD'].intern]
-      match = @tree.match(@env['PATH_INFO'], method)
-      return instance_exec(*match[0], &match[1]) if match
-      not_found
+      method = METHODS[env['REQUEST_METHOD'].intern]
+      match = @tree.match(env['PATH_INFO'], method)
+      if match
+        request = Request.new(env)
+        response = request.instance_exec(*match[0], &match[1])
+        if request.rendered?
+          response
+        else
+          [200,
+            {'Content-Type' => 'text/plain; charset=utf-8'},
+            "'render' not called in #{env['REQUEST_METHOD']} '#{env['PATH_INFO']}'"
+          ]
+        end
+      else
+        not_found
+      end
     end
 
     def self.run
@@ -57,10 +90,6 @@ module Xdef42
 
     def headers
       {'Content-Type' => 'application/json; charset=utf-8'}
-    end
-
-    def render code, content
-      [code, headers, JSON.stringify(content)]
     end
 
     def not_found
@@ -77,7 +106,25 @@ module Kernel
     begin
       hout = Nginx::Headers_out.new
       r = Nginx::Request.new
-      call_res = obj.call({'REQUEST_METHOD' => r.method, 'PATH_INFO' => r.unparsed_uri})
+      env = {
+        "REQUEST_METHOD"    => r.method,
+        "SCRIPT_NAME"       => "",
+        "PATH_INFO"         => r.uri,
+        "REQUEST_URI"       => r.unparsed_uri,
+        "QUERY_STRING"      => r.args,
+        "SERVER_NAME"       => r.hostname,
+        # "SERVER_ADDR"       => c.local_ip,
+        # "SERVER_PORT"       => c.local_port.to_s,
+        # "REMOTE_ADDR"       => c.remote_ip,
+        # "REMOTE_PORT"       => c.remote_port.to_s,
+        "rack.url_scheme"   => r.scheme,
+        "rack.multithread"  => false,
+        "rack.multiprocess" => true,
+        "rack.run_once"     => false,
+        "rack.hijack?"      => false,
+        "server.version"    => Nginx.server_version,
+      }
+      call_res = obj.call(env)
       call_res[1].each do |k,v|
         hout[k] = v
       end
