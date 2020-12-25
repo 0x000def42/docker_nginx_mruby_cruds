@@ -43,7 +43,9 @@ module Xdef42
     }
 
     def db
-      @db ||= Redis.new("redis", 6379, 2)    
+      @db ||= Redis.new("redis", 6379, 2).tap do |client|
+        client.enable_keepalive
+      end
     end
 
     def self.included(base)
@@ -135,7 +137,9 @@ module Kernel
       Nginx.echo call_res[2]
       Nginx.return call_res[0]
     rescue => e
-      Nginx.echo e.message + e.backtrace.join(" ")
+      puts e.message + "\n" + e.backtrace.join("\n")
+      Nginx.return 500
+      # Nginx.echo e.message + e.backtrace.join(" ")
     end
   end
 end

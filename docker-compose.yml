@@ -11,7 +11,6 @@ services:
       - ./docker/conf/nginx.conf:/usr/local/nginx/conf/nginx.conf
   redis:
     image: redis
-    # volumes:
-      # - redis_tmp:/tmp
-# volumes:
-  # redis_tmp:
+    command: redis-server /etc/redis.conf
+    volumes:
+      - ./redis.conf:/etc/redis.conf
