@@ -2,9 +2,19 @@ module Xdef42
   class Request
 
     attr_reader :env, :params, :rendered
-    def initialize env
+    def initialize app, env
+      @app = app
       @env = env
+      if env["REQUEST_METHOD"] == "POST"
+        @params = JSON.parse env['rack.input']
+      else
+        @params = {}
+      end
       @rendered = false
+    end
+
+    def db
+      @app.db
     end
 
     def rendered?
@@ -69,7 +79,7 @@ module Xdef42
       method = METHODS[env['REQUEST_METHOD'].intern]
       match = @tree.match(env['PATH_INFO'], method)
       if match
-        request = Request.new(env)
+        request = Request.new(self, env)
         response = request.instance_exec(*match[0], &match[1])
         if request.rendered?
           response
@@ -82,14 +92,6 @@ module Xdef42
       else
         not_found
       end
-    end
-
-    def self.run
-      App.new
-    end
-
-    def headers
-      {'Content-Type' => 'application/json; charset=utf-8'}
     end
 
     def not_found
@@ -106,6 +108,7 @@ module Kernel
     begin
       hout = Nginx::Headers_out.new
       r = Nginx::Request.new
+      input = (r.method == "POST" || r.method == "PUT") ? r.body : ""
       env = {
         "REQUEST_METHOD"    => r.method,
         "SCRIPT_NAME"       => "",
@@ -123,6 +126,7 @@ module Kernel
         "rack.run_once"     => false,
         "rack.hijack?"      => false,
         "server.version"    => Nginx.server_version,
+        "rack.input"       => input,
       }
       call_res = obj.call(env)
       call_res[1].each do |k,v|
