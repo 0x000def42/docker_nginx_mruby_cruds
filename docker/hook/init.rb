@@ -1,4 +1,3 @@
-
 module Xdef42
   module App
     METHODS = {
@@ -11,9 +10,17 @@ module Xdef42
       OPTIONS: ::R3::OPTIONS,
     }
 
+    def db
+      @db ||= Redis.new("redis", 6379, 2)    
+    end
+
     def self.included(base)
       base.class_eval do
         @@routes = []
+
+        def self.instance
+          @instance ||= self.new
+        end
 
         def self.routes
           @@routes
