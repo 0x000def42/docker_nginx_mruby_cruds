@@ -5,7 +5,7 @@ module Xdef42
     def initialize app, env
       @app = app
       @env = env
-      if env["REQUEST_METHOD"] == "POST"
+      if env["REQUEST_METHOD"] == "POST" && env['rack.input']
         @params = JSON.parse env['rack.input']
       else
         @params = {}
@@ -134,12 +134,117 @@ module Kernel
       call_res[1].each do |k,v|
         hout[k] = v
       end
-      Nginx.echo call_res[2]
+      Nginx.rputs call_res[2]
       Nginx.return call_res[0]
     rescue => e
       puts e.message + "\n" + e.backtrace.join("\n")
       Nginx.return 500
       # Nginx.echo e.message + e.backtrace.join(" ")
+    end
+  end
+end
+
+class PostRepository
+
+  def all
+
+  end
+
+  def find id
+    db.hgetall("posts:id:#{id}")
+  end
+
+  def create args
+    db = App.instance.db
+    db.queue('eval', <<-LUA, 3, 'posts', 1, 2, 'title', 'Title', 'content', 'Content')
+      local collection = KEYS[1]
+      local indexesCount = tonumber(KEYS[2])
+      local fieldsCount = tonumber(KEYS[3])
+
+      
+      local id = redis.call("incr", collection .. ':pk_inc')
+
+      local indexI = 1
+      while indexI <= indexesCount do
+
+        local indexName = ARGV[indexI * 2 - 1]
+        local indexValue = ARGV[indexI * 2]
+
+        redis.call("zadd", collection .. ':index:' .. indexName, 0, indexValue..":"..id)
+
+        indexI = indexI + 1
+      end
+      redis.call('hmset', 'posts' .. ':id:' .. id, unpack(ARGV))
+
+      return {"id", id, unpack(ARGV)}
+    LUA
+    response = db.reply
+    i = 0
+    serialized = {}
+    while i < response.size / 2 do
+      serialized[response[i*2]] = response[i * 2 + 1]
+      i+=1
+    end
+    serialized
+  end
+
+  def update id, args
+
+  end
+
+  def delete id
+
+  end
+
+end
+
+class App
+  include Xdef42::App
+  get "/" do
+    post = PostRepository.new.create({title: "Title", content: "Content"})
+    render 200, post
+  end
+
+  get "/posts" do
+    posts = PostRepository.new.all
+    render 200, posts
+  end
+
+  post "/posts" do
+    
+    if post = PostRepository.new.create(params)
+      render 200, post
+    else
+      render 200, {errors: ["Validation failed"]}
+    end
+  end
+
+  get "/posts/{id}" do |id|
+    if post = PostRepository.find(id)
+      render 200, post
+    else
+      render 200, {errors: ["Not found"]}
+    end
+  end
+
+  patch "/posts/{id}" do |id|
+    if post = PostRepository.find(id)
+      if post = PostRepository.new.update(id, params)
+        render 200, post
+      else
+        render 200, {errors: ["Validation failed"]}
+      end
+    else
+      render 200, {errors: ["Not found"]}
+    end
+  end
+
+  delete "/posts/{id}" do |id|
+    if post = PostRepository.find(id)
+      PostRepository.new.delete(id)
+      render 204, {}
+    else
+      render 200, {errors: ["Not found"]}
     end
   end
 end
