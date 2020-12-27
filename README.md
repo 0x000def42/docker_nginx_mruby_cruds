@@ -17,3 +17,5 @@ Added bindings to C lib r3 with familiar route style slow down rps to 60K.
 Added redis client and write and read simple hash into json string slow rps down to 20k.
 
 Added per request isolation params and env, read body.
+
+Append creating logic into stored redis procedure on lua with increment id, filling indexes now rps in 16k on create post

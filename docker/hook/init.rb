@@ -156,7 +156,7 @@ class PostRepository
 
   def create args
     db = App.instance.db
-    db.queue('eval', <<-LUA, 3, 'posts', 1, 2, 'title', 'Title', 'content', 'Content')
+    db.queue('eval', <<-LUA, 3, 'posts', 0, 2, 'title', 'Title', 'content', 'Content')
       local collection = KEYS[1]
       local indexesCount = tonumber(KEYS[2])
       local fieldsCount = tonumber(KEYS[3])
