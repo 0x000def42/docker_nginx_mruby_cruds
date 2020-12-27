@@ -147,7 +147,30 @@ end
 class PostRepository
 
   def all
+    db = App.instance.db
+    db.queue('eval', <<-LUA, 1, 'posts')
+      local collection = KEYS[1]
+      local members = redis.call('smembers', collection .. ":pk")
 
+      local result = {}
+
+       for i, id in pairs(members) do
+         table.insert(result, redis.call("hgetall", collection..":id:"..id))
+       end
+
+      return result
+    LUA
+    response = db.reply
+    response.map do |elem|
+      i = 0
+      serialized = {}
+      while i < elem.size / 2 do
+        serialized[elem[i*2]] = elem[i * 2 + 1]
+        i+=1
+      end
+      serialized
+    end
+   
   end
 
   def find id
@@ -174,9 +197,13 @@ class PostRepository
 
         indexI = indexI + 1
       end
-      redis.call('hmset', 'posts' .. ':id:' .. id, unpack(ARGV))
+      redis.call("sadd", collection .. ':pk', id)
+      local arr = ARGV
+      table.insert(arr, "id")
+      table.insert(arr, id)
+      redis.call('hmset', 'posts' .. ':id:' .. id, unpack(arr))
 
-      return {"id", id, unpack(ARGV)}
+      return arr
     LUA
     response = db.reply
     i = 0
@@ -201,8 +228,9 @@ end
 class App
   include Xdef42::App
   get "/" do
-    post = PostRepository.new.create({title: "Title", content: "Content"})
-    render 200, post
+    render 200, PostRepository.new.all
+    # post = PostRepository.new.create({title: "Title", content: "Content"})
+    # render 200, post
   end
 
   get "/posts" do
